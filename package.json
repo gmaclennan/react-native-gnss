@@ -28,9 +28,9 @@
   "author": "Gregor MacLennan <gmaclennan@digital-democracy.org> (https://github.com/gmaclennan)",
   "license": "MIT",
   "homepage": "https://github.com/gmaclennan/react-native-gnss#readme",
-  "dependencies": {},
   "devDependencies": {
     "@types/react": "^18.0.25",
+    "babel-plugin-module-resolver": "^5.0.0",
     "expo-module-scripts": "^3.4.1",
     "expo-modules-core": "^1.11.9"
   },

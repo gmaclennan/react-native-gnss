@@ -1,26 +1,60 @@
-import { NativeModulesProxy, EventEmitter, Subscription } from 'expo-modules-core';
+import {
+  NativeModulesProxy,
+  EventEmitter,
+  Subscription,
+} from "expo-modules-core";
+import { useSyncExternalStore } from "react";
 
-// Import the native module. On web, it will be resolved to ReactNativeGnss.web.ts
-// and on native platforms to ReactNativeGnss.ts
-import ReactNativeGnssModule from './ReactNativeGnssModule';
-import ReactNativeGnssView from './ReactNativeGnssView';
-import { ChangeEventPayload, ReactNativeGnssViewProps } from './ReactNativeGnss.types';
+import ReactNativeGnssModule from "./ReactNativeGnssModule";
 
-// Get the native constant value.
-export const PI = ReactNativeGnssModule.PI;
-
-export function hello(): string {
-  return ReactNativeGnssModule.hello();
+export interface SatelliteType {
+  svid: number;
+  constellationType: number;
+  elevationDegrees: number;
+  azimuthDegrees: number;
+  usedInFix: boolean;
 }
 
-export async function setValueAsync(value: string) {
-  return await ReactNativeGnssModule.setValueAsync(value);
+interface SatelliteEventPayload {
+  satellites: SatelliteType[];
 }
 
-const emitter = new EventEmitter(ReactNativeGnssModule ?? NativeModulesProxy.ReactNativeGnss);
+const emitter = new EventEmitter(
+  ReactNativeGnssModule ?? NativeModulesProxy.ReactNativeGnss,
+);
+const { subscribe, getSnapshot } = createGnssState(emitter);
 
-export function addChangeListener(listener: (event: ChangeEventPayload) => void): Subscription {
-  return emitter.addListener<ChangeEventPayload>('onChange', listener);
+export function useSatellites() {
+  return useSyncExternalStore(subscribe, getSnapshot);
 }
 
-export { ReactNativeGnssView, ReactNativeGnssViewProps, ChangeEventPayload };
+function createGnssState(emitter: EventEmitter) {
+  const listeners = new Set<() => void>();
+  let satellites: SatelliteType[] = [];
+  let subscription: null | Subscription = null;
+
+  function subscribe(listener: () => void) {
+    listeners.add(listener);
+    if (!subscription) {
+      subscription = emitter.addListener<SatelliteEventPayload>(
+        "satellites",
+        (event) => {
+          satellites = event.satellites;
+          listeners.forEach((listener) => listener());
+        },
+      );
+    }
+    return () => {
+      listeners.delete(listener);
+      if (listeners.size === 0) {
+        subscription?.remove();
+        subscription = null;
+      }
+    };
+  }
+
+  return {
+    subscribe,
+    getSnapshot: () => satellites,
+  };
+}
