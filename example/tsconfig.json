@@ -1,0 +1,10 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "react-native-gnss": ["../src/index"],
+      "react-native-gnss/*": ["../src/*"]
+    }
+  }
+}
